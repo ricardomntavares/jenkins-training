@@ -7,5 +7,11 @@ pipeline {
       }
     }
 
+    stage('Run groovy script') {
+      steps {
+        load 'script.groovy'
+      }
+    }
+
   }
 }
