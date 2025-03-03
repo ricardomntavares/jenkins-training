@@ -8,8 +8,19 @@ pipeline {
     }
 
     stage('List files and folders') {
-      steps {
-        sh 'ls -ltra'
+      parallel {
+        stage('List files and folders') {
+          steps {
+            sh 'ls -ltra'
+          }
+        }
+
+        stage('Front-End Unit Tests') {
+          steps {
+            sh 'cd curriculum-front && npm i && npm run test:unit'
+          }
+        }
+
       }
     }
 
