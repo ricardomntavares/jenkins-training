@@ -7,7 +7,7 @@ pipeline {
       }
     }
 
-    stage('') {
+    stage('List files and folders') {
       steps {
         sh 'ls -ltra'
       }
