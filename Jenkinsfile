@@ -1,44 +1,68 @@
-pipeline {
-    agent any
-
+/* groovylint-disable BlockStartsWithBlankLine, CompileStatic, GStringExpressionWithinString, LineLength */
+pipelineJob('WEB/WEB-RELEASE-NOTES') {
     parameters {
-        // Git parameter to select a release tag
-        gitParameter(
-            name: 'RELEASE_TAG',
-            type: 'PT_TAG',  // PT_TAG for selecting tags
-            branchFilter: '.*', // Regex to match all tags
-            defaultValue: '',  // Default value
-            description: 'Select the release tag to build',
-            selectedValue: 'NONE',  // Default selection when no value is chosen
-            sortMode: 'DESCENDING_SMART',  // Sort tags, DESCENDING_SMART sorts by most recent
-            tagFilter: '*release*',  // Only tags with 'release' in their name will appear
-            quickFilterEnabled: true
+        gitParameter {
+            branch('')
+            branchFilter('.*')
+            defaultValue('')
+            description('''The tag to build and deploy.
+Ex:
+- tag: jenkins-training-v1.0.0''')
+            name('RELEASE_TAGS')
+            quickFilterEnabled(true)
+            requiredParameter(true)
+            selectedValue('NONE')
+            sortMode('DESCENDING_SMART')
+            tagFilter('*release*')
+            type('PT_TAG')
+            useRepository('https://github.com/ricardomntavares/jenkins-training.git') // Use your test repo
+        }
+        string(
+            name: 'RELEASE_DATE',
+            defaultValue: new Date().format('dd/MM/yyyy', TimeZone.getTimeZone('Europe/Lisbon')),
+            description: 'Release date (dd/MM/yyyy)',
+            trim: true
         )
+        string(name: 'CVSDK_VERSION', description: 'CVSDK version', trim: true)
+        choice {
+            choices(['MAJOR', 'MINOR', 'HOTFIX'])
+            name('BUILD_TYPE')
+        }
+        choice {
+            choices(['web', 'xtv', 'roku', 'mobile', 'appletv'])
+            name('PROJECT')
+        }
     }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                script {
-                    // Checkout the selected tag (provided by the gitParameter)
-                    checkout scm
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('ricardomntavares/jenkins-training') // Update to your test project repo
+                        credentials('jenkins-nbcu-access-bot')  // Use appropriate credentials for your repo
+                    }
+                    branch('main')
+                    extensions {
+                        cleanBeforeCheckout()
+                        cleanCheckout {
+                            deleteUntrackedNestedRepositories(true)
+                        }
+                        cloneOptions {
+                            noTags(false)
+                            shallow(false)
+                            timeout(10)
+                            reference("${GIT_REFERENCE_REPOS_PATH}/jenkins-training") // Optional reference for optimization
+                        }
+                    }
                 }
             }
+            scriptPath('jenkins/release_notes_jenkinsfile') // Adjust path if necessary
         }
-
-        stage('Build and Deploy') {
-            steps {
-                script {
-                    // Just an example to show the selected release tag
-                    echo "Building with release tag: ${params.RELEASE_TAG}"
-
-                    // Add your build/deployment steps here
-                    // For example, you can use the selected tag to checkout specific code
-                    sh "git checkout ${params.RELEASE_TAG}"
-
-                    // Further deployment or build steps can follow here
-                }
-            }
-        }
+    }
+    description('''Generates and publishes release notes for the given app version and release date.
+Pulls changes from version control, formats them, and optionally updates documentation or notifies stakeholders.
+Notes include: release info, highlights, release features, technical specs, gating issues, feature flags, bug fixes, known issues and other updates based on commit history or changelog.''')
+    logRotator {
+        numToKeep(20)
     }
 }
