@@ -1,5 +1,6 @@
-/* groovylint-disable BlockStartsWithBlankLine, CompileStatic, GStringExpressionWithinString, LineLength */
-pipelineJob('WEB/WEB-RELEASE-NOTES') {
+pipeline {
+    agent any
+
     parameters {
         gitParameter {
             branch('')
@@ -15,7 +16,7 @@ Ex:
             sortMode('DESCENDING_SMART')
             tagFilter('*release*')
             type('PT_TAG')
-            useRepository('https://github.com/ricardomntavares/jenkins-training.git') // Use your test repo
+            useRepository('https://github.com/ricardomntavares/jenkins-training.git')
         }
         string(
             name: 'RELEASE_DATE',
@@ -33,36 +34,34 @@ Ex:
             name('PROJECT')
         }
     }
-    definition {
-        cpsScm {
-            scm {
-                git {
-                    remote {
-                        github('ricardomntavares/jenkins-training') // Update to your test project repo
-                        credentials('jenkins-nbcu-access-bot')  // Use appropriate credentials for your repo
-                    }
-                    branch('main')
-                    extensions {
-                        cleanBeforeCheckout()
-                        cleanCheckout {
-                            deleteUntrackedNestedRepositories(true)
-                        }
-                        cloneOptions {
-                            noTags(false)
-                            shallow(false)
-                            timeout(10)
-                            reference("${GIT_REFERENCE_REPOS_PATH}/jenkins-training") // Optional reference for optimization
-                        }
-                    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', 
+                    url: 'https://github.com/ricardomntavares/jenkins-training.git', 
+                    credentialsId: 'jenkins-nbcu-access-bot'
+            }
+        }
+
+        stage('Generate Release Notes') {
+            steps {
+                script {
+                    // Your script logic to generate release notes
+                    echo "Generating release notes for tag ${params.RELEASE_TAGS}..."
                 }
             }
-            scriptPath('jenkins/release_notes_jenkinsfile') // Adjust path if necessary
         }
+
+        // Add additional stages as necessary for your project
     }
-    description('''Generates and publishes release notes for the given app version and release date.
-Pulls changes from version control, formats them, and optionally updates documentation or notifies stakeholders.
-Notes include: release info, highlights, release features, technical specs, gating issues, feature flags, bug fixes, known issues and other updates based on commit history or changelog.''')
-    logRotator {
-        numToKeep(20)
+
+    post {
+        success {
+            echo 'Release notes generated successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
     }
 }
