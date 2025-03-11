@@ -2,37 +2,34 @@ pipeline {
     agent any
 
     parameters {
-        gitParameter {
-            branch('')
-            branchFilter('.*')
-            defaultValue('')
-            description('''The tag to build and deploy.
+        string(
+            name: 'RELEASE_TAGS',
+            defaultValue: '',
+            description: '''The tag to build and deploy.
 Ex:
-- tag: jenkins-training-v1.0.0''')
-            name('RELEASE_TAGS')
-            quickFilterEnabled(true)
-            requiredParameter(true)
-            selectedValue('NONE')
-            sortMode('DESCENDING_SMART')
-            tagFilter('*release*')
-            type('PT_TAG')
-            useRepository('https://github.com/ricardomntavares/jenkins-training.git')
-        }
+- tag: gst-apps-web-v.3.1.8'''
+        )
         string(
             name: 'RELEASE_DATE',
             defaultValue: new Date().format('dd/MM/yyyy', TimeZone.getTimeZone('Europe/Lisbon')),
             description: 'Release date (dd/MM/yyyy)',
             trim: true
         )
-        string(name: 'CVSDK_VERSION', description: 'CVSDK version', trim: true)
-        choice {
-            choices(['MAJOR', 'MINOR', 'HOTFIX'])
-            name('BUILD_TYPE')
-        }
-        choice {
-            choices(['web', 'xtv', 'roku', 'mobile', 'appletv'])
-            name('PROJECT')
-        }
+        string(
+            name: 'CVSDK_VERSION',
+            description: 'CVSDK version',
+            trim: true
+        )
+        choice(
+            name: 'BUILD_TYPE',
+            choices: ['MAJOR', 'MINOR', 'HOTFIX'],
+            description: 'Select the build type'
+        )
+        choice(
+            name: 'PROJECT',
+            choices: ['web', 'xtv', 'roku', 'mobile', 'appletv'],
+            description: 'Select the project'
+        )
     }
 
     stages {
